@@ -1,7 +1,10 @@
 # TO DOs
 
+- Figure out how this gets swapped in
+- Remove errors library
+- Remove any unnecessary libs/functionality
+- Get a test running
 - Test out locally
-- Get tests running properly
 - Add acknowledgements
 
 # Caddy 2 cluster / Certmagic TLS cluster support for Nomad Secure Variables

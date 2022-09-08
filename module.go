@@ -23,23 +23,23 @@ func (NomadStorage) CaddyModule() caddy.ModuleInfo {
 }
 
 // Provision is called by Caddy to prepare the module
-func (cs *NomadStorage) Provision(ctx caddy.Context) error {
-	cs.logger = ctx.Logger(cs).Sugar()
-	cs.logger.Infof("TLS storage is using Nomad at %s", cs.Address)
+func (ns *NomadStorage) Provision(ctx caddy.Context) error {
+	ns.logger = ctx.Logger(ns).Sugar()
+	ns.logger.Infof("TLS storage is using Nomad at %s", ns.Address)
 
 	if prefix := os.Getenv(EnvNamePrefix); prefix != "" {
-		cs.Prefix = prefix
+		ns.Prefix = prefix
 	}
 
 	if valueprefix := os.Getenv(EnvValuePrefix); valueprefix != "" {
-		cs.ValuePrefix = valueprefix
+		ns.ValuePrefix = valueprefix
 	}
 
-	return cs.createNomadClient()
+	return ns.createNomadClient()
 }
 
-func (cs *NomadStorage) CertMagicStorage() (certmagic.Storage, error) {
-	return cs, nil
+func (ns *NomadStorage) CertMagicStorage() (certmagic.Storage, error) {
+	return ns, nil
 }
 
 // UnmarshalCaddyfile parses plugin settings from Caddyfile
@@ -52,7 +52,7 @@ func (cs *NomadStorage) CertMagicStorage() (certmagic.Storage, error) {
 //     tls_enabled  "false"
 //     tls_insecure "true"
 // }
-func (cs *NomadStorage) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
+func (ns *NomadStorage) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 	for d.Next() {
 		key := d.Val()
 		var value string
@@ -66,40 +66,40 @@ func (cs *NomadStorage) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 			if value != "" {
 				parsedAddress, err := caddy.ParseNetworkAddress(value)
 				if err == nil {
-					cs.Address = parsedAddress.JoinHostPort(0)
+					ns.Address = parsedAddress.JoinHostPort(0)
 				}
 			}
 		case "token":
 			if value != "" {
-				cs.Token = value
+				ns.Token = value
 			}
 		case "timeout":
 			if value != "" {
 				timeParse, err := strconv.Atoi(value)
 				if err == nil {
-					cs.Timeout = timeParse
+					ns.Timeout = timeParse
 				}
 			}
 		case "prefix":
 			if value != "" {
-				cs.Prefix = value
+				ns.Prefix = value
 			}
 		case "value_prefix":
 			if value != "" {
-				cs.ValuePrefix = value
+				ns.ValuePrefix = value
 			}
 		case "tls_enabled":
 			if value != "" {
 				tlsParse, err := strconv.ParseBool(value)
 				if err == nil {
-					cs.TlsEnabled = tlsParse
+					ns.TlsEnabled = tlsParse
 				}
 			}
 		case "tls_insecure":
 			if value != "" {
 				tlsInsecureParse, err := strconv.ParseBool(value)
 				if err == nil {
-					cs.TlsInsecure = tlsInsecureParse
+					ns.TlsInsecure = tlsInsecureParse
 				}
 			}
 		}

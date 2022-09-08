@@ -2,17 +2,18 @@ package storagenomad
 
 import (
 	"context"
+	"fmt"
+	"io/fs"
 	"path"
+	"time"
 
 	"github.com/caddyserver/certmagic"
 	nomad "github.com/hashicorp/nomad/api"
-	"github.com/pteich/errors"
 	"go.uber.org/zap"
 )
 
 // NomadStorage allows to store certificates and other TLS resources
 // in a shared cluster environment using Nomad Secure Variables.
-// It uses distributed locks to ensure consistency.
 type NomadStorage struct {
 	certmagic.Storage
 	NomadClient *nomad.Client
@@ -39,99 +40,91 @@ func New() *NomadStorage {
 	return &s
 }
 
-func (cs *NomadStorage) prefixKey(key string) string {
-	return path.Join(cs.Prefix, key)
+func (ns *NomadStorage) prefixKey(key string) string {
+	return path.Join(ns.Prefix, key)
 }
 
 // Store saves data value as a secure variable in Nomad
-func (cs NomadStorage) Store(ctx context.Context, key string, value []byte) error {
-	// kv := &nomad.KVPair{Key: cs.prefixKey(key)}
+func (ns NomadStorage) Store(ctx context.Context, key string, value []byte) error {
+	items := &nomad.SecureVariableItems{
+		"Value":    string(value),
+		"Modified": time.Now().String(),
+	}
 
-	// // prepare the stored data
-	// nomadData := &StorageData{
-	// 	Value:    value,
-	// 	Modified: time.Now(),
-	// }
+	sv := &nomad.SecureVariable{
+		Path:  ns.prefixKey(key),
+		Items: *items,
+	}
 
-	// kv.Value = nomadData
+	opts := nomad.WriteOptions{}
 
-	// opts := nomad.WriteOptions{}
-	// if _, err = cs.NomadClient.KV().Put(kv, opts.WithContext(ctx)); err != nil {
-	// 	return errors.Wrapf(err, "unable to store data for %s", cs.prefixKey(key))
-	// }
-
-	// TODO: Create a Nomad SV with the Data
+	if _, err := ns.NomadClient.SecureVariables().Create(sv, &opts); err != nil {
+		msg := fmt.Sprintf("unable to store data for %s", ns.prefixKey(key))
+		return wrapError(err, msg)
+	}
 
 	return nil
 }
 
 // Load retrieves the value for a key from Nomad KV
-func (cs NomadStorage) Load(ctx context.Context, key string) ([]byte, error) {
-	cs.logger.Debugf("loading data from Nomad for %s", key)
+func (ns NomadStorage) Load(ctx context.Context, key string) ([]byte, error) {
+	ns.logger.Debugf("loading data from Nomad for %s", key)
 
-	// TODO: Load a Nomad SV
+	path := ns.prefixKey(key)
+	opts := NomadQueryDefaults(ctx)
+	items, _, err := ns.NomadClient.SecureVariables().GetItems(path, opts)
+	if err != nil {
+		return nil, err
+	}
 
-	// kv, _, err := cs.NomadClient.KV().Get(cs.prefixKey(key), NomadQueryDefaults(ctx))
-	// if err != nil {
-	// 	return nil, err
-	// }
+	i := *items
+	val := i["Value"]
 
-	// if kv == nil {
-	// 	return nil, fs.ErrNotExist
-	// }
+	if val == "" {
+		return nil, fs.ErrNotExist
+	}
 
-	// return kv.Value, nil
-
-	return []byte("foo"), nil
+	return []byte(val), nil
 }
 
 // Delete a key from Nomad KV
-func (cs NomadStorage) Delete(ctx context.Context, key string) error {
-	cs.logger.Infof("deleting key %s from Nomad", key)
+func (ns NomadStorage) Delete(ctx context.Context, key string) error {
+	ns.logger.Infof("deleting key %s from Nomad", key)
 
-	// // first obtain existing keypair
-	// kv, _, err := cs.NomadClient.KV().Get(cs.prefixKey(key), NomadQueryDefaults(ctx))
-	// if err != nil {
-	// 	return fmt.Errorf("%s: %w", err, fs.ErrNotExist)
-	// }
-
-	// if kv == nil {
-	// 	return fs.ErrNotExist
-	// }
-
-	// // now do a Check-And-Set operation to verify we really deleted the key
-	// if success, _, err := cs.NomadClient.KV().DeleteCAS(kv, nil); err != nil {
-	// 	return errors.Wrapf(err, "unable to delete data for %s", cs.prefixKey(key))
-	// } else if !success {
-	// 	return errors.Errorf("failed to lock data delete for %s", cs.prefixKey(key))
-	// }
-
-	// TODO: DELETE a Nomad SV
+	path := ns.prefixKey(key)
+	opts := &nomad.WriteOptions{}
+	if _, err := ns.NomadClient.SecureVariables().Delete(path, opts); err != nil {
+		msg := fmt.Sprintf("unable to delete data for %s", ns.prefixKey(key))
+		return wrapError(err, msg)
+	}
 
 	return nil
 }
 
 // Exists checks if a key exists
-func (cs NomadStorage) Exists(ctx context.Context, key string) bool {
-	// TODO: READ A NOMAD SV
+func (ns NomadStorage) Exists(ctx context.Context, key string) bool {
+	path := ns.prefixKey(key)
+	opts := NomadQueryDefaults(ctx)
+	items, _, err := ns.NomadClient.SecureVariables().GetItems(path, opts)
+	if err != nil {
+		// TODO: make sure this interface is okay
+		return false
+	}
 
-	// kv, _, err := cs.NomadClient.KV().Get(cs.prefixKey(key), NomadQueryDefaults(ctx))
-	// if kv != nil && err == nil {
-	// 	return true
-	// }
-	// return false
+	i := *items
+	val := i["Value"]
 
-	return true
+	return val != ""
 }
 
 // List returns a list with all keys under a given prefix
-func (cs NomadStorage) List(ctx context.Context, prefix string, recursive bool) ([]string, error) {
+func (ns NomadStorage) List(ctx context.Context, prefix string, recursive bool) ([]string, error) {
 	// TODO: LIST KEYS UNDER THE PREFIX
 
 	// var keysFound []string
 
 	// // get a list of all keys at prefix
-	// keys, _, err := cs.NomadClient.KV().Keys(cs.prefixKey(prefix), "", NomadQueryDefaults(ctx))
+	// keys, _, err := ns.NomadClient.KV().Keys(ns.prefixKey(prefix), "", NomadQueryDefaults(ctx))
 	// if err != nil {
 	// 	return keysFound, err
 	// }
@@ -142,8 +135,8 @@ func (cs NomadStorage) List(ctx context.Context, prefix string, recursive bool) 
 
 	// // remove default prefix from keys
 	// for _, key := range keys {
-	// 	if strings.HasPrefix(key, cs.prefixKey(prefix)) {
-	// 		key = strings.TrimPrefix(key, cs.Prefix+"/")
+	// 	if strings.HasPrefix(key, ns.prefixKey(prefix)) {
+	// 		key = strings.TrimPrefix(key, ns.Prefix+"/")
 	// 		keysFound = append(keysFound, key)
 	// 	}
 	// }
@@ -171,10 +164,10 @@ func (cs NomadStorage) List(ctx context.Context, prefix string, recursive bool) 
 }
 
 // Stat returns statistic data of a key
-func (cs NomadStorage) Stat(ctx context.Context, key string) (certmagic.KeyInfo, error) {
-	// kv, _, err := cs.NomadClient.KV().Get(cs.prefixKey(key), NomadQueryDefaults(ctx))
+func (ns NomadStorage) Stat(ctx context.Context, key string) (certmagic.KeyInfo, error) {
+	// kv, _, err := ns.NomadClient.KV().Get(ns.prefixKey(key), NomadQueryDefaults(ctx))
 	// if err != nil {
-	// 	return certmagic.KeyInfo{}, fmt.Errorf("unable to obtain data for %s: %w", cs.prefixKey(key), fs.ErrNotExist)
+	// 	return certmagic.KeyInfo{}, fmt.Errorf("unable to obtain data for %s: %w", ns.prefixKey(key), fs.ErrNotExist)
 	// }
 	// if kv == nil {
 	// 	return certmagic.KeyInfo{}, fs.ErrNotExist
@@ -194,38 +187,38 @@ func (cs NomadStorage) Stat(ctx context.Context, key string) (certmagic.KeyInfo,
 	}, nil
 }
 
-func (cs *NomadStorage) createNomadClient() error {
+func (ns *NomadStorage) createNomadClient() error {
 	// get the default config
 	nomadCfg := nomad.DefaultConfig()
-	if cs.Address != "" {
-		nomadCfg.Address = cs.Address
+	if ns.Address != "" {
+		nomadCfg.Address = ns.Address
 	}
-	if cs.Token != "" {
-		nomadCfg.SecretID = cs.Token
+	if ns.Token != "" {
+		nomadCfg.SecretID = ns.Token
 	}
-	// if cs.TlsEnabled {
+	// if ns.TlsEnabled {
 	// 	nomadCfg.Scheme = "https"
 	// }
 
-	nomadCfg.TLSConfig.Insecure = cs.TlsInsecure
+	nomadCfg.TLSConfig.Insecure = ns.TlsInsecure
 
 	// set a dial context to prevent default keepalive
 	// nomadCfg.Transport.DialContext = (&net.Dialer{
-	// 	Timeout:   time.Duration(cs.Timeout) * time.Second,
-	// 	KeepAlive: time.Duration(cs.Timeout) * time.Second,
+	// 	Timeout:   time.Duration(ns.Timeout) * time.Second,
+	// 	KeepAlive: time.Duration(ns.Timeout) * time.Second,
 	// }).DialContext
 
 	// create the Nomad API client
 	nomadClient, err := nomad.NewClient(nomadCfg)
 	if err != nil {
-		return errors.Wrap(err, "unable to create Nomad client")
+		return wrapError(err, "unable to create Nomad client")
 	}
 
 	if _, err := nomadClient.Agent().NodeName(); err != nil {
-		return errors.Wrap(err, "unable to ping Nomad")
+		return wrapError(err, "unable to ping Nomad")
 	}
 
-	cs.NomadClient = nomadClient
+	ns.NomadClient = nomadClient
 	return nil
 }
 
