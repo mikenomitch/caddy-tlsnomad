@@ -9,7 +9,7 @@
 
 ## This is based off of pteich/caddy-tlsconsul, big thanks to pteich for that
 
-# Caddy 2 cluster / Certmagic TLS cluster support for Nomad Secure Variables
+# Caddy Certmagic TLS cluster support for Nomad Secure Variables
 
 [Nomad Secure Variable](https://github.com/hashicorp/nomad) Storage for [Caddy](https://github.com/caddyserver/caddy) TLS data.
 
@@ -24,10 +24,6 @@ The version of this plugin in the master branch supports Caddy 2.0.0+ using Cert
 ## Older versions
 
 This will only work with Caddy 2.
-
-## Docker Image
-
-You can use my Docker image `mnomitch/caddy-tlsnomad` (https://hub.docker.com/r/mnomitch/caddy-tlsnomad) to get an image of Caddy including this Nomad TLS plugin build in. It is based on the official caddy:2 image and will be build automatically on changes in this repo.
 
 ## Configuration
 
