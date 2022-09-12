@@ -7,6 +7,8 @@
 - Test out locally
 - Add acknowledgements
 
+## This is based off of pteich/caddy-tlsconsul, big thanks to pteich for that
+
 # Caddy 2 cluster / Certmagic TLS cluster support for Nomad Secure Variables
 
 [Nomad Secure Variable](https://github.com/hashicorp/nomad) Storage for [Caddy](https://github.com/caddyserver/caddy) TLS data.
