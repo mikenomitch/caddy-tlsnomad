@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var nomadClient *nomad.Client
+// var nomadClient *nomad.Client
 
 const TestPrefix = "nomadtlstest"
 
@@ -21,81 +21,85 @@ func setupNomadEnv(t *testing.T) *NomadStorage {
 	// os.Setenv("NOMAD_TOKEN", "2f9e03f8-714b-5e4d-65ea-c983d6b172c4")
 
 	ns := New()
+	ns.createNomadClient()
 
-	// _, err := ns.NomadClient.SecureVariables().Delete(TestPrefix, &nomad.WriteOptions{})
-	// assert.NoError(t, err)
+	_, err := ns.NomadClient.Variables().Delete(TestPrefix, &nomad.WriteOptions{})
+	assert.NoError(t, err)
 	return ns
 }
 
-func TestNomadStorage_Store(t *testing.T) {
-	ns := setupNomadEnv(t)
+// func TestNomadStorage_Store(t *testing.T) {
+// 	ns := setupNomadEnv(t)
 
-	varPath := path.Join("acme", "example.com", "sites", "example.com", "example.com.crt")
-	ctx := context.Background()
+// 	varPath := path.Join("acme", "examplecom", "sites", "examplecom", "examplecomcrt")
+// 	ctx := context.Background()
 
-	err := ns.Store(ctx, varPath, []byte("crt data"))
-	assert.NoError(t, err)
-}
+// 	err := ns.Store(ctx, varPath, []byte("crt data"))
+// 	assert.NoError(t, err)
+// }
 
 // func TestNomadStorage_Exists(t *testing.T) {
 // 	ns := setupNomadEnv(t)
+// 	ctx := context.Background()
 
-// 	key := path.Join("acme", "example.com", "sites", "example.com", "example.com.crt")
+// 	key := path.Join("acme", "examplecom", "sites", "examplecom", "examplecomcrt")
 
-// 	err := ns.Store(key, []byte("crt data"))
+// 	err := ns.Store(ctx, key, []byte("crt data"))
 // 	assert.NoError(t, err)
 
-// 	exists := ns.Exists(key)
+// 	exists := ns.Exists(ctx, key)
 // 	assert.True(t, exists)
 // }
 
 // func TestNomadStorage_Load(t *testing.T) {
 // 	ns := setupNomadEnv(t)
+// 	ctx := context.Background()
 
-// 	key := path.Join("acme", "example.com", "sites", "example.com", "example.com.crt")
+// 	key := path.Join("acme", "examplecom", "sites", "examplecom", "examplecomcrt")
 // 	content := []byte("crt data")
 
-// 	err := ns.Store(key, content)
+// 	err := ns.Store(ctx, key, content)
 // 	assert.NoError(t, err)
 
-// 	contentLoded, err := ns.Load(key)
+// 	contentLoded, err := ns.Load(ctx, key)
 // 	assert.NoError(t, err)
 
 // 	assert.Equal(t, content, contentLoded)
 // }
 
-// func TestNomadStorage_Delete(t *testing.T) {
-// 	ns := setupNomadEnv(t)
+func TestNomadStorage_Delete(t *testing.T) {
+	ns := setupNomadEnv(t)
+	ctx := context.Background()
 
-// 	key := path.Join("acme", "example.com", "sites", "example.com", "example.com.crt")
-// 	content := []byte("crt data")
+	key := path.Join("acme", "examplecom", "sites", "examplecom", "examplecomcrt")
+	content := []byte("crt data")
 
-// 	err := ns.Store(key, content)
-// 	assert.NoError(t, err)
+	err := ns.Store(ctx, key, content)
+	assert.NoError(t, err)
 
-// 	err = ns.Delete(key)
-// 	assert.NoError(t, err)
+	err = ns.Delete(ctx, key)
+	assert.NoError(t, err)
 
-// 	exists := ns.Exists(key)
-// 	assert.False(t, exists)
+	exists := ns.Exists(ctx, key)
+	assert.False(t, exists)
 
-// 	contentLoaded, err := ns.Load(key)
-// 	assert.Nil(t, contentLoaded)
+	contentLoaded, err := ns.Load(ctx, key)
+	assert.Nil(t, contentLoaded)
 
-// 	_, ok := err.(certmagic.ErrNotExist)
-// 	assert.True(t, ok)
-// }
+	assert.Equal(t, "foo", err.Error())
+}
 
 // func TestNomadStorage_Stat(t *testing.T) {
 // 	ns := setupNomadEnv(t)
+// 	ctx := context.Background()
 
 // 	key := path.Join("acme", "example.com", "sites", "example.com", "example.com.crt")
 // 	content := []byte("crt data")
 
-// 	err := ns.Store(key, content)
+// 	err := ns.Store(ctx, key, content)
 // 	assert.NoError(t, err)
 
-// 	info, err := ns.Stat(key)
+// 	info, err := ns.Stat(ctx, key)
 // 	assert.NoError(t, err)
 
 // 	assert.Equal(t, key, info.Key)

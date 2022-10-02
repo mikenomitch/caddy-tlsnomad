@@ -1,19 +1,17 @@
 # TO DOs
 
-- Figure out how this gets swapped in
-- Remove errors library
-- Remove any unnecessary libs/functionality
-- Get a test running
-- Test out locally
-- Add acknowledgements
+- Fix delete code (see test)
+- Finish Stat (is this a must do? - copy Consul?)
+- Finish List (is this a must do? - copy Consul?)
+- Get all tests passing
+- Ensure this works with "."s in variable names (or correct somehow)
+- Test locally manually
 
-## This is based off of pteich/caddy-tlsconsul, big thanks to pteich for that
+# Caddy Certmagic TLS cluster support for Nomad Variables
 
-# Caddy Certmagic TLS cluster support for Nomad Secure Variables
+[Nomad Variable](https://github.com/hashicorp/nomad) Storage for [Caddy](https://github.com/caddyserver/caddy) TLS data.
 
-[Nomad Secure Variable](https://github.com/hashicorp/nomad) Storage for [Caddy](https://github.com/caddyserver/caddy) TLS data.
-
-This cluster plugin enables Caddy 2 to store TLS data like keys and certificates as Nomad Secure Variables so you don't have to rely on a shared filesystem.
+This cluster plugin enables Caddy 2 to store TLS data like keys and certificates as Nomad Variables so you don't have to rely on a shared filesystem.
 This allows you to use Caddy 2 in distributed environment and use a centralized storage for auto-generated certificates that is
 shared between all Caddy instances.
 
@@ -62,9 +60,6 @@ Caddyfile ([reference](https://caddyserver.com/docs/caddyfile/options))
            tls_insecure "true"
     }
 }
-
-:443 {
-}
 ```
 
 ### Nomad configuration
@@ -76,18 +71,22 @@ Without any further configuration a running Nomad on 127.0.0.1:4646 is assumed.
 
 There are additional ENV variables for this plugin:
 
-- `CADDY_CLUSTERING_nomad_PREFIX` defines the prefix for the keys in the Secure Variable. Default is `caddytls`
+- `CADDY_CLUSTERING_nomad_PREFIX` defines the prefix for the keys in the Variable. Default is `caddytls`
 
 ### Nomad ACL Policy
 
-To access Nomad you need a token with a valid ACL policy. Assuming you configured `cadytls` as your Secure Variable path prefix you can use the following settings:
+To access Nomad you need a token with a valid ACL policy. Assuming you configured `cadytls` as your Variable path prefix you can use the following settings:
 
 ```
 namespace "default" {
-  secure_variables {
+  variables {
     path "cadytls/*" {
       capabilities = ["write", "read", "destroy"]
     }
   }
 }
 ```
+
+## Acknowledgements
+
+This plugin code is based off of [pteich/caddy-tlsconsul](https://github.com/pteich/caddy-tlsconsul), big thanks to pteich for that.
