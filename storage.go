@@ -70,19 +70,18 @@ func (ns NomadStorage) Store(ctx context.Context, key string, value []byte) erro
 func (ns NomadStorage) Load(ctx context.Context, key string) ([]byte, error) {
 	path := ns.prefixKey(key)
 	opts := NomadQueryDefaults(ctx)
-	items, _, err := ns.NomadClient.Variables().GetItems(path, opts)
+	v, _, err := ns.NomadClient.Variables().Read(path, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	i := *items
-	val := i["Value"]
+	items := v.Items
 
-	if val == "" {
-		return nil, fs.ErrNotExist
+	if val, ok := items["Value"]; ok {
+		return []byte(val), nil
 	}
 
-	return []byte(val), nil
+	return nil, fs.ErrNotExist
 }
 
 // Delete a key from Nomad KV
@@ -102,18 +101,14 @@ func (ns NomadStorage) Delete(ctx context.Context, key string) error {
 func (ns NomadStorage) Exists(ctx context.Context, key string) bool {
 	path := ns.prefixKey(key)
 	opts := NomadQueryDefaults(ctx)
-	items, _, err := ns.NomadClient.Variables().GetItems(path, opts)
+
+	v, _, err := ns.NomadClient.Variables().Read(path, opts)
 	if err != nil {
 		// TODO: make sure this interface is okay
 		return false
 	}
 
-	i := *items
-
-	fmt.Println("i")
-	fmt.Println(i)
-
-	// val := i["Value"]
+	i := v.Items
 	if _, ok := i["Value"]; ok {
 		return true
 	}

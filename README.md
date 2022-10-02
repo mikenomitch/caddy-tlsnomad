@@ -1,6 +1,5 @@
 # TO DOs
 
-- Fix delete code (see test)
 - Finish Stat (is this a must do? - copy Consul?)
 - Finish List (is this a must do? - copy Consul?)
 - Get all tests passing
