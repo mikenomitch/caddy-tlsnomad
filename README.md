@@ -1,10 +1,9 @@
 # TO DOs
 
-- Finish Stat (is this a must do? - copy Consul?)
-- Finish List (is this a must do? - copy Consul?)
-- Get all tests passing
 - Ensure this works with "."s in variable names (or correct somehow)
-- Test locally manually
+- Test manually locally
+- Go through To Dos and fix
+- Clean up
 
 # Caddy Certmagic TLS cluster support for Nomad Variables
 
