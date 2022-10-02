@@ -106,35 +106,32 @@ func TestNomadStorage_Stat(t *testing.T) {
 	assert.Equal(t, key, info.Key)
 }
 
-// func TestNomadStorage_List(t *testing.T) {
-// 	ns := setupNomadEnv(t)
+func TestNomadStorage_List(t *testing.T) {
+	ns := setupNomadEnv(t)
+	ctx := context.Background()
 
-// 	err := ns.Store(path.Join("acme", "examplecom", "sites", "examplecom", "examplecomcrt"), []byte("crt"))
-// 	assert.NoError(t, err)
-// 	err = ns.Store(path.Join("acme", "examplecom", "sites", "examplecom", "examplecom.key"), []byte("key"))
-// 	assert.NoError(t, err)
-// 	err = ns.Store(path.Join("acme", "examplecom", "sites", "examplecom", "examplecom.json"), []byte("meta"))
-// 	assert.NoError(t, err)
+	err := ns.Store(ctx, path.Join("acme", "examplecom", "sites", "examplecom", "examplecomcrt"), []byte("crt"))
+	assert.NoError(t, err)
+	err = ns.Store(ctx, path.Join("acme", "examplecom", "sites", "first-level"), []byte("first"))
+	assert.NoError(t, err)
 
-// 	keys, err := ns.List(path.Join("acme", "examplecom", "sites", "examplecom"), true)
-// 	assert.NoError(t, err)
-// 	assert.Len(t, keys, 3)
-// 	assert.Contains(t, keys, path.Join("acme", "examplecom", "sites", "examplecom", "examplecomcrt"))
-// }
+	keys, err := ns.List(ctx, path.Join("acme", "examplecom", "sites"), true)
+	assert.NoError(t, err)
+	assert.Len(t, keys, 2)
+	assert.Contains(t, keys, path.Join("acme", "examplecom", "sites", "examplecom", "examplecomcrt"))
+}
 
-// func TestNomadStorage_ListNonRecursive(t *testing.T) {
-// 	ns := setupNomadEnv(t)
+func TestNomadStorage_ListNonRecursive(t *testing.T) {
+	ns := setupNomadEnv(t)
+	ctx := context.Background()
 
-// 	err := ns.Store(path.Join("acme", "examplecom", "sites", "examplecom", "examplecomcrt"), []byte("crt"))
-// 	assert.NoError(t, err)
-// 	err = ns.Store(path.Join("acme", "examplecom", "sites", "examplecom", "examplecom.key"), []byte("key"))
-// 	assert.NoError(t, err)
-// 	err = ns.Store(path.Join("acme", "examplecom", "sites", "examplecom", "examplecom.json"), []byte("meta"))
-// 	assert.NoError(t, err)
+	err := ns.Store(ctx, path.Join("acme", "examplecom", "sites", "examplecom", "examplecomcrt"), []byte("crt"))
+	assert.NoError(t, err)
+	err = ns.Store(ctx, path.Join("acme", "examplecom", "sites", "first-level"), []byte("first"))
+	assert.NoError(t, err)
 
-// 	keys, err := ns.List(path.Join("acme", "examplecom", "sites"), false)
-// 	assert.NoError(t, err)
-
-// 	assert.Len(t, keys, 1)
-// 	assert.Contains(t, keys, path.Join("acme", "examplecom", "sites", "examplecom"))
-// }
+	keys, err := ns.List(ctx, path.Join("acme", "examplecom", "sites"), false)
+	assert.NoError(t, err)
+	assert.Len(t, keys, 1)
+	assert.Contains(t, keys, path.Join("acme", "examplecom", "sites", "first-level"))
+}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/caddyserver/certmagic"
@@ -118,47 +119,33 @@ func (ns NomadStorage) Exists(ctx context.Context, key string) bool {
 
 // List returns a list with all keys under a given prefix
 func (ns NomadStorage) List(ctx context.Context, prefix string, recursive bool) ([]string, error) {
-	// TODO: LIST KEYS UNDER THE PREFIX
+	var keysFound []string
 
-	// var keysFound []string
+	path := ns.prefixKey(prefix)
+	opts := NomadQueryDefaults(ctx)
+	keys, _, err := ns.NomadClient.Variables().PrefixList(path, opts)
+	if err != nil {
+		return nil, err
+	}
 
-	// // get a list of all keys at prefix
-	// keys, _, err := ns.NomadClient.KV().Keys(ns.prefixKey(prefix), "", NomadQueryDefaults(ctx))
-	// if err != nil {
-	// 	return keysFound, err
-	// }
+	for _, k := range keys {
+		key := k.Path
+		if strings.HasPrefix(key, path) {
+			pf := path + "/"
+			trimmedKey := strings.TrimPrefix(key, pf)
+			isNested := strings.Contains(trimmedKey, "/")
 
-	// if len(keys) == 0 {
-	// 	return keysFound, fs.ErrNotExist
-	// }
+			if recursive || !isNested {
+				matchingPath := strings.TrimPrefix(key, ns.Prefix+"/")
+				keysFound = append(keysFound, matchingPath)
+			}
+		}
+	}
 
-	// // remove default prefix from keys
-	// for _, key := range keys {
-	// 	if strings.HasPrefix(key, ns.prefixKey(prefix)) {
-	// 		key = strings.TrimPrefix(key, ns.Prefix+"/")
-	// 		keysFound = append(keysFound, key)
-	// 	}
-	// }
+	if len(keys) == 0 {
+		return keysFound, fs.ErrNotExist
+	}
 
-	// // if recursive wanted, just return all keys
-	// if recursive {
-	// 	return keysFound, nil
-	// }
-
-	// // for non-recursive split path and look for unique keys just under given prefix
-	// keysMap := make(map[string]bool)
-	// for _, key := range keysFound {
-	// 	dir := strings.Split(strings.TrimPrefix(key, prefix+"/"), "/")
-	// 	keysMap[dir[0]] = true
-	// }
-	// keysFound = make([]string, 0)
-	// for key := range keysMap {
-	// 	keysFound = append(keysFound, path.Join(prefix, key))
-	// }
-
-	// return keysFound, nil
-
-	keysFound := make([]string, 0)
 	return keysFound, nil
 }
 
@@ -228,13 +215,13 @@ func (ns *NomadStorage) createNomadClient() error {
 }
 
 func NomadQueryDefaults(ctx context.Context) *nomad.QueryOptions {
-	// TODO: Set some of these
+	// TODO: Set some of these?
 	opts := &nomad.QueryOptions{}
 	return opts.WithContext(ctx)
 }
 
 func NomaWriteDefaults(ctx context.Context) *nomad.WriteOptions {
-	// TODO: Set some of these
+	// TODO: Set some of these?
 	opts := &nomad.WriteOptions{}
 	return opts.WithContext(ctx)
 }
