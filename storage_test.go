@@ -6,8 +6,9 @@ import (
 	"path"
 	"testing"
 
-	nomad "githubcom/hashicorp/nomad/api"
-	"githubcom/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert"
+
+	nomad "github.com/hashicorp/nomad/api"
 )
 
 // var nomadClient *nomad.Client

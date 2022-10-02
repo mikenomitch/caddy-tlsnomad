@@ -48,7 +48,7 @@ func (ns *NomadStorage) prefixKey(key string) string {
 func (ns NomadStorage) Store(ctx context.Context, key string, value []byte) error {
 	items := &nomad.VariableItems{
 		"Value":    string(value),
-		"Modified": time.Now().String(),
+		"Modified": time.Now().Format(time.RFC3339),
 	}
 
 	sv := &nomad.Variable{
@@ -164,26 +164,32 @@ func (ns NomadStorage) List(ctx context.Context, prefix string, recursive bool) 
 
 // Stat returns statistic data of a key
 func (ns NomadStorage) Stat(ctx context.Context, key string) (certmagic.KeyInfo, error) {
-	// kv, _, err := ns.NomadClient.KV().Get(ns.prefixKey(key), NomadQueryDefaults(ctx))
-	// if err != nil {
-	// 	return certmagic.KeyInfo{}, fmt.Errorf("unable to obtain data for %s: %w", ns.prefixKey(key), fs.ErrNotExist)
-	// }
-	// if kv == nil {
-	// 	return certmagic.KeyInfo{}, fs.ErrNotExist
-	// }
+	path := ns.prefixKey(key)
+	opts := NomadQueryDefaults(ctx)
+	v, _, err := ns.NomadClient.Variables().Read(path, opts)
+	if err != nil {
+		return certmagic.KeyInfo{}, err
+	}
 
-	// return certmagic.KeyInfo{
-	// 	Key:        key,
-	// 	Modified:   kv.Mofified,
-	// 	Size:       int64(len(kv.Value)),
-	// 	IsTerminal: false,
-	// }, nil
+	items := v.Items
+	modified, mok := items["Modified"]
+	val, vok := items["Value"]
+	t, err := time.Parse(time.RFC3339, modified)
 
-	return certmagic.KeyInfo{
-		Key:        "wat",
-		Size:       int64(len("wat")),
-		IsTerminal: false,
-	}, nil
+	if err != nil {
+		return certmagic.KeyInfo{}, err
+	}
+
+	if mok && vok {
+		return certmagic.KeyInfo{
+			Key:        key,
+			Modified:   t,
+			Size:       int64(len(val)),
+			IsTerminal: false,
+		}, nil
+	}
+
+	return certmagic.KeyInfo{}, fmt.Errorf("error reading value")
 }
 
 func (ns *NomadStorage) createNomadClient() error {
