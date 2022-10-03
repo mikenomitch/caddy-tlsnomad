@@ -1,4 +1,4 @@
-module github.com/mnomitch/caddy-tlsnomad
+module github.com/mikenomitch/caddy-tlsnomad
 
 go 1.18
 
