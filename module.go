@@ -43,15 +43,16 @@ func (ns *NomadStorage) CertMagicStorage() (certmagic.Storage, error) {
 }
 
 // UnmarshalCaddyfile parses plugin settings from Caddyfile
-// storage nomad {
-//     address      "127.0.0.1:8500"
-//     token        "nomad-access-token"
-//     timeout      10
-//     prefix       "caddytls"
-//     value_prefix "myprefix"
-//     tls_enabled  "false"
-//     tls_insecure "true"
-// }
+//
+//	storage nomad {
+//	    address      "http://127.0.0.1:8500"
+//	    token        "nomad-access-token"
+//	    timeout      10
+//	    prefix       "caddytls"
+//	    value_prefix "myprefix"
+//	    tls_enabled  "false"
+//	    tls_insecure "true"
+//	}
 func (ns *NomadStorage) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 	for d.Next() {
 		key := d.Val()
@@ -64,10 +65,7 @@ func (ns *NomadStorage) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 		switch key {
 		case "address":
 			if value != "" {
-				parsedAddress, err := caddy.ParseNetworkAddress(value)
-				if err == nil {
-					ns.Address = parsedAddress.JoinHostPort(0)
-				}
+				ns.Address = value
 			}
 		case "token":
 			if value != "" {

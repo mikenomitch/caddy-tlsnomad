@@ -41,26 +41,36 @@ func New() *NomadStorage {
 	return &s
 }
 
+func (ns *NomadStorage) readyKey(key string) string {
+	return ns.escapeKey(ns.prefixKey(key))
+}
+
 func (ns *NomadStorage) prefixKey(key string) string {
 	return path.Join(ns.Prefix, key)
 }
 
+func (ns *NomadStorage) escapeKey(key string) string {
+	return strings.ReplaceAll(key, ".", "_")
+}
+
 // Store saves data value as a variable in Nomad
 func (ns NomadStorage) Store(ctx context.Context, key string, value []byte) error {
+	escapedAndPrefixedKey := ns.readyKey(key)
+
 	items := &nomad.VariableItems{
 		"Value":    string(value),
 		"Modified": time.Now().Format(time.RFC3339),
 	}
 
 	sv := &nomad.Variable{
-		Path:  ns.prefixKey(key),
+		Path:  escapedAndPrefixedKey,
 		Items: *items,
 	}
 
 	opts := NomaWriteDefaults(ctx)
 
 	if _, _, err := ns.NomadClient.Variables().Create(sv, opts); err != nil {
-		msg := fmt.Sprintf("unable to store data for %s", ns.prefixKey(key))
+		msg := fmt.Sprintf("unable to store data for %s", escapedAndPrefixedKey)
 		return wrapError(err, msg)
 	}
 
@@ -69,7 +79,7 @@ func (ns NomadStorage) Store(ctx context.Context, key string, value []byte) erro
 
 // Load retrieves the value for a key from Nomad KV
 func (ns NomadStorage) Load(ctx context.Context, key string) ([]byte, error) {
-	path := ns.prefixKey(key)
+	path := ns.readyKey(key)
 	opts := NomadQueryDefaults(ctx)
 	v, _, err := ns.NomadClient.Variables().Read(path, opts)
 	if err != nil {
@@ -87,11 +97,11 @@ func (ns NomadStorage) Load(ctx context.Context, key string) ([]byte, error) {
 
 // Delete a key from Nomad KV
 func (ns NomadStorage) Delete(ctx context.Context, key string) error {
-	path := ns.prefixKey(key)
+	path := ns.readyKey(key)
 	opts := NomaWriteDefaults(ctx)
 
 	if _, err := ns.NomadClient.Variables().Delete(path, opts); err != nil {
-		msg := fmt.Sprintf("unable to delete data for %s", ns.prefixKey(key))
+		msg := fmt.Sprintf("unable to delete data for %s", ns.readyKey(key))
 		return wrapError(err, msg)
 	}
 
@@ -100,12 +110,11 @@ func (ns NomadStorage) Delete(ctx context.Context, key string) error {
 
 // Exists checks if a key exists
 func (ns NomadStorage) Exists(ctx context.Context, key string) bool {
-	path := ns.prefixKey(key)
+	path := ns.readyKey(key)
 	opts := NomadQueryDefaults(ctx)
 
 	v, _, err := ns.NomadClient.Variables().Read(path, opts)
 	if err != nil {
-		// TODO: make sure this interface is okay
 		return false
 	}
 
@@ -151,7 +160,7 @@ func (ns NomadStorage) List(ctx context.Context, prefix string, recursive bool) 
 
 // Stat returns statistic data of a key
 func (ns NomadStorage) Stat(ctx context.Context, key string) (certmagic.KeyInfo, error) {
-	path := ns.prefixKey(key)
+	path := ns.readyKey(key)
 	opts := NomadQueryDefaults(ctx)
 	v, _, err := ns.NomadClient.Variables().Read(path, opts)
 	if err != nil {
@@ -188,6 +197,7 @@ func (ns *NomadStorage) createNomadClient() error {
 	if ns.Token != "" {
 		nomadCfg.SecretID = ns.Token
 	}
+
 	// if ns.TlsEnabled {
 	// 	nomadCfg.Scheme = "https"
 	// }
@@ -202,6 +212,7 @@ func (ns *NomadStorage) createNomadClient() error {
 
 	// create the Nomad API client
 	nomadClient, err := nomad.NewClient(nomadCfg)
+
 	if err != nil {
 		return wrapError(err, "unable to create Nomad client")
 	}
@@ -215,13 +226,11 @@ func (ns *NomadStorage) createNomadClient() error {
 }
 
 func NomadQueryDefaults(ctx context.Context) *nomad.QueryOptions {
-	// TODO: Set some of these?
 	opts := &nomad.QueryOptions{}
 	return opts.WithContext(ctx)
 }
 
 func NomaWriteDefaults(ctx context.Context) *nomad.WriteOptions {
-	// TODO: Set some of these?
 	opts := &nomad.WriteOptions{}
 	return opts.WithContext(ctx)
 }

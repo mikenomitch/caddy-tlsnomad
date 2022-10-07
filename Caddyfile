@@ -1,0 +1,16 @@
+{
+    storage nomad {
+           address      "http://127.0.0.1:4646"
+           token        "nomad-access-token"
+           timeout      10
+           prefix       "caddytls"
+           value_prefix "myprefix"
+           aes_key      "nomadtls-1234567890-caddytls-32"
+           tls_enabled  "false"
+           tls_insecure "true"
+    }
+}
+
+relayd.io {
+  reverse_proxy localhost:22962
+}

@@ -11,8 +11,6 @@ import (
 	nomad "github.com/hashicorp/nomad/api"
 )
 
-// var nomadClient *nomad.Client
-
 const TestPrefix = "nomadtlstest"
 
 // these tests needs a running Nomad server
@@ -32,7 +30,7 @@ func setupNomadEnv(t *testing.T) *NomadStorage {
 func TestNomadStorage_Store(t *testing.T) {
 	ns := setupNomadEnv(t)
 
-	varPath := path.Join("acme", "examplecom", "sites", "examplecom", "examplecomcrt")
+	varPath := path.Join("acme", "example.com", "sites", "example.com", "example.com.crt")
 	ctx := context.Background()
 
 	err := ns.Store(ctx, varPath, []byte("crt data"))
@@ -43,7 +41,7 @@ func TestNomadStorage_Exists(t *testing.T) {
 	ns := setupNomadEnv(t)
 	ctx := context.Background()
 
-	key := path.Join("acme", "examplecom", "sites", "examplecom", "examplecomcrt")
+	key := path.Join("acme", "example.com", "sites", "example.com", "example.com.crt")
 
 	err := ns.Store(ctx, key, []byte("crt data"))
 	assert.NoError(t, err)
@@ -56,7 +54,7 @@ func TestNomadStorage_Load(t *testing.T) {
 	ns := setupNomadEnv(t)
 	ctx := context.Background()
 
-	key := path.Join("acme", "examplecom", "sites", "examplecom", "examplecomcrt")
+	key := path.Join("acme", "example.com", "sites", "example.com", "example.com.crt")
 	content := []byte("crt data")
 
 	err := ns.Store(ctx, key, content)
@@ -72,7 +70,7 @@ func TestNomadStorage_Delete(t *testing.T) {
 	ns := setupNomadEnv(t)
 	ctx := context.Background()
 
-	key := path.Join("acme", "examplecom", "sites", "examplecom", "examplecomcrt")
+	key := path.Join("acme", "example.com", "sites", "example.com", "example.com.crt")
 	content := []byte("crt data")
 
 	err := ns.Store(ctx, key, content)
@@ -94,7 +92,7 @@ func TestNomadStorage_Stat(t *testing.T) {
 	ns := setupNomadEnv(t)
 	ctx := context.Background()
 
-	key := path.Join("acme", "examplecom", "sites", "examplecom", "examplecomcrt")
+	key := path.Join("acme", "example.com", "sites", "example.com", "example.com.crt")
 	content := []byte("crt data")
 
 	err := ns.Store(ctx, key, content)
@@ -110,28 +108,28 @@ func TestNomadStorage_List(t *testing.T) {
 	ns := setupNomadEnv(t)
 	ctx := context.Background()
 
-	err := ns.Store(ctx, path.Join("acme", "examplecom", "sites", "examplecom", "examplecomcrt"), []byte("crt"))
+	err := ns.Store(ctx, path.Join("acme", "example.com", "sites", "example.com", "example.com.crt"), []byte("crt"))
 	assert.NoError(t, err)
-	err = ns.Store(ctx, path.Join("acme", "examplecom", "sites", "first-level"), []byte("first"))
+	err = ns.Store(ctx, path.Join("acme", "example.com", "sites", "first-level"), []byte("first"))
 	assert.NoError(t, err)
 
-	keys, err := ns.List(ctx, path.Join("acme", "examplecom", "sites"), true)
+	keys, err := ns.List(ctx, path.Join("acme", "example_com", "sites"), true)
 	assert.NoError(t, err)
 	assert.Len(t, keys, 2)
-	assert.Contains(t, keys, path.Join("acme", "examplecom", "sites", "examplecom", "examplecomcrt"))
+	assert.Contains(t, keys, path.Join("acme", "example_com", "sites", "example_com", "example_com_crt"))
 }
 
 func TestNomadStorage_ListNonRecursive(t *testing.T) {
 	ns := setupNomadEnv(t)
 	ctx := context.Background()
 
-	err := ns.Store(ctx, path.Join("acme", "examplecom", "sites", "examplecom", "examplecomcrt"), []byte("crt"))
+	err := ns.Store(ctx, path.Join("acme", "example.com", "sites", "example.com", "example.com.crt"), []byte("crt"))
 	assert.NoError(t, err)
-	err = ns.Store(ctx, path.Join("acme", "examplecom", "sites", "first-level"), []byte("first"))
+	err = ns.Store(ctx, path.Join("acme", "example.com", "sites", "first-level"), []byte("first"))
 	assert.NoError(t, err)
 
-	keys, err := ns.List(ctx, path.Join("acme", "examplecom", "sites"), false)
+	keys, err := ns.List(ctx, path.Join("acme", "example_com", "sites"), false)
 	assert.NoError(t, err)
 	assert.Len(t, keys, 1)
-	assert.Contains(t, keys, path.Join("acme", "examplecom", "sites", "first-level"))
+	assert.Contains(t, keys, path.Join("acme", "example_com", "sites", "first-level"))
 }

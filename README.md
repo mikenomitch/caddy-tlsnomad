@@ -1,8 +1,6 @@
 # TO DOs
 
-- Ensure this works with "."s in variable names (or correct somehow)
 - Test manually locally
-- Go through To Dos and fix
 - Clean up
 
 # Caddy Certmagic TLS cluster support for Nomad Variables
@@ -12,8 +10,6 @@
 This cluster plugin enables Caddy 2 to store TLS data like keys and certificates as Nomad Variables so you don't have to rely on a shared filesystem.
 This allows you to use Caddy 2 in distributed environment and use a centralized storage for auto-generated certificates that is
 shared between all Caddy instances.
-
-With this plugin it is possible to use multiple Caddy instances with the same HTTPS domain for instance with DNS round-robin.
 
 The version of this plugin in the master branch supports Caddy 2.0.0+ using CertMagic's [Storage Interface](https://pkg.go.dev/github.com/caddyserver/certmagic?tab=doc#Storage)
 
