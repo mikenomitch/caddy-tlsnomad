@@ -84,7 +84,7 @@ func (ns NomadStorage) Load(ctx context.Context, key string) ([]byte, error) {
 	opts := NomadQueryDefaults(ctx)
 	ns.logger.Debugf("loading key: %s", path)
 
-	v, _, err := ns.NomadClient.Variables().Read(path, opts)
+	v, _, err := ns.NomadClient.Variables().Peek(path, opts)
 	if err != nil {
 		msg := fmt.Sprintf("unable to read data for %s", ns.readyKey(key))
 		return nil, wrapError(err, msg)
@@ -119,7 +119,7 @@ func (ns NomadStorage) Exists(ctx context.Context, key string) bool {
 	ns.logger.Debugf("checking existence: %s", path)
 	opts := NomadQueryDefaults(ctx)
 
-	v, _, err := ns.NomadClient.Variables().Read(path, opts)
+	v, _, err := ns.NomadClient.Variables().Peek(path, opts)
 	if err != nil {
 		return false
 	}
@@ -171,7 +171,7 @@ func (ns NomadStorage) Stat(ctx context.Context, key string) (certmagic.KeyInfo,
 	path := ns.readyKey(key)
 	ns.logger.Debugf("stat: %s", path)
 	opts := NomadQueryDefaults(ctx)
-	v, _, err := ns.NomadClient.Variables().Read(path, opts)
+	v, _, err := ns.NomadClient.Variables().Peek(path, opts)
 	if err != nil {
 		msg := fmt.Sprintf("unable to read stats for %s", path)
 		return certmagic.KeyInfo{}, wrapError(err, msg)
