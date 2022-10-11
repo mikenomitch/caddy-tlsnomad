@@ -56,6 +56,7 @@ func (ns *NomadStorage) escapeKey(key string) string {
 // Store saves data value as a variable in Nomad
 func (ns NomadStorage) Store(ctx context.Context, key string, value []byte) error {
 	escapedAndPrefixedKey := ns.readyKey(key)
+	ns.logger.Infof("storing key: %s", escapedAndPrefixedKey)
 
 	items := &nomad.VariableItems{
 		"Value":    string(value),
@@ -81,6 +82,8 @@ func (ns NomadStorage) Store(ctx context.Context, key string, value []byte) erro
 func (ns NomadStorage) Load(ctx context.Context, key string) ([]byte, error) {
 	path := ns.readyKey(key)
 	opts := NomadQueryDefaults(ctx)
+	ns.logger.Infof("loading key: %s", path)
+
 	v, _, err := ns.NomadClient.Variables().Read(path, opts)
 	if err != nil {
 		msg := fmt.Sprintf("unable to read data for %s", ns.readyKey(key))
@@ -113,6 +116,7 @@ func (ns NomadStorage) Delete(ctx context.Context, key string) error {
 // Exists checks if a key exists
 func (ns NomadStorage) Exists(ctx context.Context, key string) bool {
 	path := ns.readyKey(key)
+	ns.logger.Infof("checking existence: %s", path)
 	opts := NomadQueryDefaults(ctx)
 
 	v, _, err := ns.NomadClient.Variables().Read(path, opts)
@@ -133,6 +137,7 @@ func (ns NomadStorage) List(ctx context.Context, prefix string, recursive bool) 
 	var keysFound []string
 
 	path := ns.prefixKey(prefix)
+	ns.logger.Infof("listing: %s", path)
 	opts := NomadQueryDefaults(ctx)
 	keys, _, err := ns.NomadClient.Variables().PrefixList(path, opts)
 	if err != nil {
@@ -164,6 +169,7 @@ func (ns NomadStorage) List(ctx context.Context, prefix string, recursive bool) 
 // Stat returns statistic data of a key
 func (ns NomadStorage) Stat(ctx context.Context, key string) (certmagic.KeyInfo, error) {
 	path := ns.readyKey(key)
+	ns.logger.Infof("stat: %s", path)
 	opts := NomadQueryDefaults(ctx)
 	v, _, err := ns.NomadClient.Variables().Read(path, opts)
 	if err != nil {
