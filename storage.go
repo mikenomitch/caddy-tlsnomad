@@ -83,7 +83,8 @@ func (ns NomadStorage) Load(ctx context.Context, key string) ([]byte, error) {
 	opts := NomadQueryDefaults(ctx)
 	v, _, err := ns.NomadClient.Variables().Read(path, opts)
 	if err != nil {
-		return nil, err
+		msg := fmt.Sprintf("unable to read data for %s", ns.readyKey(key))
+		return nil, wrapError(err, msg)
 	}
 
 	items := v.Items
@@ -92,7 +93,8 @@ func (ns NomadStorage) Load(ctx context.Context, key string) ([]byte, error) {
 		return []byte(val), nil
 	}
 
-	return nil, fs.ErrNotExist
+	msg := fmt.Sprintf("unable to read data for %s", ns.readyKey(key))
+	return nil, wrapError(fs.ErrNotExist, msg)
 }
 
 // Delete a key from Nomad KV
@@ -134,7 +136,8 @@ func (ns NomadStorage) List(ctx context.Context, prefix string, recursive bool) 
 	opts := NomadQueryDefaults(ctx)
 	keys, _, err := ns.NomadClient.Variables().PrefixList(path, opts)
 	if err != nil {
-		return nil, err
+		msg := fmt.Sprintf("unable to list data for %s", path)
+		return nil, wrapError(err, msg)
 	}
 
 	for _, k := range keys {
@@ -164,7 +167,8 @@ func (ns NomadStorage) Stat(ctx context.Context, key string) (certmagic.KeyInfo,
 	opts := NomadQueryDefaults(ctx)
 	v, _, err := ns.NomadClient.Variables().Read(path, opts)
 	if err != nil {
-		return certmagic.KeyInfo{}, err
+		msg := fmt.Sprintf("unable to read stats for %s", path)
+		return certmagic.KeyInfo{}, wrapError(err, msg)
 	}
 
 	items := v.Items
@@ -173,7 +177,8 @@ func (ns NomadStorage) Stat(ctx context.Context, key string) (certmagic.KeyInfo,
 	t, err := time.Parse(time.RFC3339, modified)
 
 	if err != nil {
-		return certmagic.KeyInfo{}, err
+		msg := fmt.Sprintf("error parsing time when getting stats on %s", path)
+		return certmagic.KeyInfo{}, wrapError(err, msg)
 	}
 
 	if mok && vok {
@@ -185,7 +190,8 @@ func (ns NomadStorage) Stat(ctx context.Context, key string) (certmagic.KeyInfo,
 		}, nil
 	}
 
-	return certmagic.KeyInfo{}, fmt.Errorf("error reading value")
+	msg := fmt.Sprintf("error reading value for stats %s", path)
+	return certmagic.KeyInfo{}, fmt.Errorf(msg)
 }
 
 func (ns *NomadStorage) createNomadClient() error {
