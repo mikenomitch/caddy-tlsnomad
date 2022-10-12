@@ -57,6 +57,7 @@ func (ns *NomadStorage) escapeKey(key string) string {
 func (ns NomadStorage) Store(ctx context.Context, key string, value []byte) error {
 	escapedAndPrefixedKey := ns.readyKey(key)
 	ns.logger.Debugf("storing key: %s", escapedAndPrefixedKey)
+	ns.logger.Debugf("VALUE TO STORE: %s", string(value))
 
 	items := &nomad.VariableItems{
 		"Value":    string(value),
