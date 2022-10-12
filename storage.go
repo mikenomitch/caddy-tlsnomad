@@ -90,14 +90,17 @@ func (ns NomadStorage) Load(ctx context.Context, key string) ([]byte, error) {
 		return nil, wrapError(err, msg)
 	}
 
+	if v == nil {
+		return nil, fs.ErrNotExist
+	}
+
 	items := v.Items
 
 	if val, ok := items["Value"]; ok {
 		return []byte(val), nil
 	}
 
-	msg := fmt.Sprintf("unable to read data for %s", ns.readyKey(key))
-	return nil, wrapError(fs.ErrNotExist, msg)
+	return nil, fs.ErrNotExist
 }
 
 // Delete a key from Nomad KV
@@ -121,6 +124,10 @@ func (ns NomadStorage) Exists(ctx context.Context, key string) bool {
 
 	v, _, err := ns.NomadClient.Variables().Peek(path, opts)
 	if err != nil {
+		return false
+	}
+
+	if v == nil {
 		return false
 	}
 
@@ -175,6 +182,10 @@ func (ns NomadStorage) Stat(ctx context.Context, key string) (certmagic.KeyInfo,
 	if err != nil {
 		msg := fmt.Sprintf("unable to read stats for %s", path)
 		return certmagic.KeyInfo{}, wrapError(err, msg)
+	}
+
+	if v == nil {
+		return certmagic.KeyInfo{}, fs.ErrNotExist
 	}
 
 	items := v.Items
