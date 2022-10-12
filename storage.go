@@ -85,20 +85,32 @@ func (ns NomadStorage) Load(ctx context.Context, key string) ([]byte, error) {
 	ns.logger.Debugf("loading key: %s", path)
 
 	v, _, err := ns.NomadClient.Variables().Peek(path, opts)
+	ns.logger.Debugf("peeked key: %s", path)
+
 	if err != nil {
+		ns.logger.Debugf("error not nil")
 		msg := fmt.Sprintf("unable to read data for %s", ns.readyKey(key))
 		return nil, wrapError(err, msg)
 	}
 
+	ns.logger.Debugf("checking v nil")
 	if v == nil {
+		ns.logger.Debugf("v is nil")
 		return nil, fs.ErrNotExist
 	}
 
+	ns.logger.Debugf("v is not nil")
+
 	items := v.Items
 
+	ns.logger.Debugf("got items")
+
 	if val, ok := items["Value"]; ok {
+		ns.logger.Debugf("getting value")
 		return []byte(val), nil
 	}
+
+	ns.logger.Debugf("wat")
 
 	return nil, fs.ErrNotExist
 }
@@ -145,13 +157,18 @@ func (ns NomadStorage) List(ctx context.Context, prefix string, recursive bool) 
 
 	path := ns.prefixKey(prefix)
 	ns.logger.Debugf("listing: %s", path)
+	ns.logger.Debugf("1")
 	opts := NomadQueryDefaults(ctx)
+	ns.logger.Debugf("2")
 	keys, _, err := ns.NomadClient.Variables().PrefixList(path, opts)
+	ns.logger.Debugf("3")
 	if err != nil {
+		ns.logger.Debugf("oh no 1")
 		msg := fmt.Sprintf("unable to list data for %s", path)
 		return nil, wrapError(err, msg)
 	}
 
+	ns.logger.Debugf("4")
 	for _, k := range keys {
 		key := k.Path
 		if strings.HasPrefix(key, path) {
@@ -166,7 +183,10 @@ func (ns NomadStorage) List(ctx context.Context, prefix string, recursive bool) 
 		}
 	}
 
+	ns.logger.Debugf("5")
+
 	if len(keys) == 0 {
+		ns.logger.Debugf("6")
 		return keysFound, fs.ErrNotExist
 	}
 
