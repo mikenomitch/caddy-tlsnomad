@@ -25,7 +25,7 @@ func (NomadStorage) CaddyModule() caddy.ModuleInfo {
 // Provision is called by Caddy to prepare the module
 func (ns *NomadStorage) Provision(ctx caddy.Context) error {
 	ns.logger = ctx.Logger(ns).Sugar()
-	ns.logger.Infof("Version 0.1 - TLS storage is using Nomad at %s", ns.Address)
+	ns.logger.Infof("Version 0.11 - TLS storage is using Nomad at %s", ns.Address)
 
 	if prefix := os.Getenv(EnvNamePrefix); prefix != "" {
 		ns.Prefix = prefix
