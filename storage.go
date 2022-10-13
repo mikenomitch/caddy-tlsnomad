@@ -233,6 +233,16 @@ func (ns NomadStorage) Stat(ctx context.Context, key string) (certmagic.KeyInfo,
 	return certmagic.KeyInfo{}, fmt.Errorf(msg)
 }
 
+func (ns NomadStorage) Lock(ctx context.Context, key string) error {
+	loggy("Locking")
+	return nil
+}
+
+func (ns NomadStorage) Unlock(ctx context.Context, key string) error {
+	loggy("Unlocking")
+	return nil
+}
+
 func (ns *NomadStorage) createNomadClient() error {
 	// get the default config
 	nomadCfg := nomad.DefaultConfig()
