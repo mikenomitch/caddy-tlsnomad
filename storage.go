@@ -119,6 +119,7 @@ func (ns NomadStorage) Load(ctx context.Context, key string) ([]byte, error) {
 // Delete a key from Nomad KV
 func (ns NomadStorage) Delete(ctx context.Context, key string) error {
 	path := ns.readyKey(key)
+	loggy("deleting key: %s", path)
 	opts := NomaWriteDefaults(ctx)
 
 	if _, err := ns.NomadClient.Variables().Delete(path, opts); err != nil {

@@ -53,6 +53,7 @@ func (ns *NomadStorage) CertMagicStorage() (certmagic.Storage, error) {
 //	    tls_enabled  "false"
 //	    tls_insecure "true"
 //	}
+
 func (ns *NomadStorage) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 	for d.Next() {
 		key := d.Val()
