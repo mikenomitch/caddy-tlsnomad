@@ -2,6 +2,7 @@ package storagenomad
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"io/fs"
 	"os"
@@ -60,7 +61,7 @@ func (ns NomadStorage) Store(ctx context.Context, key string, value []byte) erro
 	loggy("VALUE TO STORE: %s", string(value))
 
 	items := &nomad.VariableItems{
-		"Value":    string(value),
+		"Value":    base64.StdEncoding.EncodeToString(value),
 		"Modified": time.Now().Format(time.RFC3339),
 	}
 
@@ -107,8 +108,7 @@ func (ns NomadStorage) Load(ctx context.Context, key string) ([]byte, error) {
 	loggy("got items")
 
 	if val, ok := items["Value"]; ok {
-		loggy("getting value")
-		return []byte(val), nil
+		return base64.StdEncoding.DecodeString(val)
 	}
 
 	loggy("wat")
