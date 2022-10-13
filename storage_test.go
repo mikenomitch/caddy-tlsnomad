@@ -85,7 +85,7 @@ func TestNomadStorage_Delete(t *testing.T) {
 	contentLoaded, err := ns.Load(ctx, key)
 	assert.Nil(t, contentLoaded)
 
-	assert.Equal(t, "variable not found", err.Error())
+	assert.Equal(t, "file does not exist", err.Error())
 }
 
 func TestNomadStorage_Stat(t *testing.T) {
