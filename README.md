@@ -1,7 +1,11 @@
 # TO DOs
 
-- Test manually locally
-- Clean up
+- Add lock/unlock methods that use Nomad Variables
+- Clean up (ie rename "loggy" method)
+- Later: Change auth to use Workload Identity tokens and TaskAPI instead of manually passed in token + URL
+- External: Push change to official Caddy plugins list
+- External: Build and push official docker image
+- External: Add a Nomad Pack (ideally official)
 
 # Caddy Certmagic TLS cluster support for Nomad Variables
 
