@@ -62,7 +62,7 @@ func (ns *NomadStorage) Store(ctx context.Context, key string, value []byte) err
 	ns.mu.Lock()
 	defer ns.mu.Unlock()
 	escapedAndPrefixedKey := ns.readyKey(key)
-	loggy("VALUE TO STORE: %s", string(value))
+	logToStderr("VALUE TO STORE: %s", string(value))
 
 	items := &nomad.VariableItems{
 		"Value":    base64.StdEncoding.EncodeToString(value),
@@ -84,60 +84,54 @@ func (ns *NomadStorage) Store(ctx context.Context, key string, value []byte) err
 	return nil
 }
 
-
 // Load retrieves the value for a key from Nomad KV
-func (ns NomadStorage) Load(ctx context.Context, key string) ([]byte, error) {
+func (ns *NomadStorage) Load(ctx context.Context, key string) ([]byte, error) {
 	ns.mu.Lock()
 	defer ns.mu.Unlock()
 	path := ns.readyKey(key)
 	opts := NomadQueryDefaults(ctx)
-	loggy("loading key: %s", path)
+	logToStderr("loading key: %s", path)
 
 	v, _, err := ns.NomadClient.Variables().Peek(path, opts)
-	loggy("peeked key: %s", path)
+	logToStderr("peeked key: %s", path)
 
 	if err != nil {
-		loggy("error not nil")
+		logToStderr("error not nil")
 		msg := fmt.Sprintf("unable to read data for %s", ns.readyKey(key))
 		return nil, wrapError(err, msg)
 	}
 
-	loggy("checking v nil")
+	logToStderr("checking v nil")
 	if v == nil {
-		loggy("v is nil")
+		logToStderr("v is nil")
 		return nil, fs.ErrNotExist
 	}
 
-	loggy("v is not nil")
+	logToStderr("v is not nil")
 
 	items := v.Items
 
-	loggy("got items")
+	logToStderr("got items")
 
 	if val, ok := items["Value"]; ok {
 		return base64.StdEncoding.DecodeString(val)
 	}
 
-	loggy("wat")
+	logToStderr("Unexpected error")
 
 	return nil, fs.ErrNotExist
 }
 
 // Delete a key from Nomad KV
 func (ns *NomadStorage) Delete(ctx context.Context, key string) error {
-	escapedAndPrefixedKey := ns.readyKey(key)
-
-	// Lock the key before deleting
-	lockKey := ns.prefixKey(fmt.Sprintf("locks/%s", escapedAndPrefixedKey))
-	lock, err := ns.acquireLock(ctx, lockKey)
-	if err != nil {
-		return err
-	}
-	defer ns.releaseLock(lock)
-
+	ns.mu.Lock()
+	defer ns.mu.Unlock()
+	path := ns.readyKey(key)
+	logToStderr("deleting key: %s", path)
 	opts := NomaWriteDefaults(ctx)
-	if _, err := ns.NomadClient.Variables().Delete(escapedAndPrefixedKey, opts); err != nil {
-		msg := fmt.Sprintf("unable to delete data for %s", escapedAndPrefixedKey)
+
+	if _, err := ns.NomadClient.Variables().Delete(path, opts); err != nil {
+		msg := fmt.Sprintf("unable to delete data for %s", ns.readyKey(key))
 		return wrapError(err, msg)
 	}
 
@@ -145,9 +139,9 @@ func (ns *NomadStorage) Delete(ctx context.Context, key string) error {
 }
 
 // Exists checks if a key exists
-func (ns NomadStorage) Exists(ctx context.Context, key string) bool {
+func (ns *NomadStorage) Exists(ctx context.Context, key string) bool {
 	path := ns.readyKey(key)
-	loggy("checking existence: %s", path)
+	logToStderr("checking existence: %s", path)
 	opts := NomadQueryDefaults(ctx)
 
 	v, _, err := ns.NomadClient.Variables().Peek(path, opts)
@@ -168,23 +162,25 @@ func (ns NomadStorage) Exists(ctx context.Context, key string) bool {
 }
 
 // List returns a list with all keys under a given prefix
-func (ns NomadStorage) List(ctx context.Context, prefix string, recursive bool) ([]string, error) {
+func (ns *NomadStorage) List(ctx context.Context, prefix string, recursive bool) ([]string, error) {
+	ns.mu.Lock()
+	defer ns.mu.Unlock()
 	var keysFound []string
 
 	path := ns.prefixKey(prefix)
-	loggy("listing: %s", path)
-	loggy("1")
+	logToStderr("listing: %s", path)
+	logToStderr("1")
 	opts := NomadQueryDefaults(ctx)
-	loggy("2")
+	logToStderr("2")
 	keys, _, err := ns.NomadClient.Variables().PrefixList(path, opts)
-	loggy("3")
+	logToStderr("3")
 	if err != nil {
-		loggy("oh no 1")
+		logToStderr("oh no 1")
 		msg := fmt.Sprintf("unable to list data for %s", path)
 		return nil, wrapError(err, msg)
 	}
 
-	loggy("4")
+	logToStderr("4")
 	for _, k := range keys {
 		key := k.Path
 		if strings.HasPrefix(key, path) {
@@ -199,10 +195,10 @@ func (ns NomadStorage) List(ctx context.Context, prefix string, recursive bool) 
 		}
 	}
 
-	loggy("5")
+	logToStderr("5")
 
 	if len(keys) == 0 {
-		loggy("6")
+		logToStderr("6")
 		return keysFound, fs.ErrNotExist
 	}
 
@@ -210,9 +206,12 @@ func (ns NomadStorage) List(ctx context.Context, prefix string, recursive bool) 
 }
 
 // Stat returns statistic data of a key
-func (ns NomadStorage) Stat(ctx context.Context, key string) (certmagic.KeyInfo, error) {
+func (ns *NomadStorage) Stat(ctx context.Context, key string) (certmagic.KeyInfo, error) {
+	ns.mu.Lock()
+	defer ns.mu.Unlock()
+
 	path := ns.readyKey(key)
-	loggy("stat: %s", path)
+	logToStderr("stat: %s", path)
 	opts := NomadQueryDefaults(ctx)
 	v, _, err := ns.NomadClient.Variables().Peek(path, opts)
 	if err != nil {
@@ -247,13 +246,13 @@ func (ns NomadStorage) Stat(ctx context.Context, key string) (certmagic.KeyInfo,
 	return certmagic.KeyInfo{}, fmt.Errorf(msg)
 }
 
-func (ns NomadStorage) Lock(ctx context.Context, key string) error {
-	loggy("Locking")
+func (ns *NomadStorage) Lock(ctx context.Context, key string) error {
+	logToStderr("Locking")
 	return nil
 }
 
-func (ns NomadStorage) Unlock(ctx context.Context, key string) error {
-	loggy("Unlocking")
+func (ns *NomadStorage) Unlock(ctx context.Context, key string) error {
+	logToStderr("Unlocking")
 	return nil
 }
 
@@ -304,7 +303,7 @@ func NomaWriteDefaults(ctx context.Context) *nomad.WriteOptions {
 	return opts.WithContext(ctx)
 }
 
-func loggy(format string, a ...any) (int, error) {
+func logToStderr(format string, a ...any) (int, error) {
 	msg := fmt.Sprintf(format, a...)
 	return fmt.Fprintln(os.Stderr, msg)
 }
