@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/caddyserver/certmagic"
@@ -21,6 +22,7 @@ type NomadStorage struct {
 	certmagic.Storage
 	NomadClient *nomad.Client
 	logger      *zap.SugaredLogger
+	mu          sync.Mutex
 
 	Address     string `json:"address"`
 	Token       string `json:"token"`
@@ -56,7 +58,9 @@ func (ns *NomadStorage) escapeKey(key string) string {
 }
 
 // Store saves data value as a variable in Nomad
-func (ns NomadStorage) Store(ctx context.Context, key string, value []byte) error {
+func (ns *NomadStorage) Store(ctx context.Context, key string, value []byte) error {
+	ns.mu.Lock()
+	defer ns.mu.Unlock()
 	escapedAndPrefixedKey := ns.readyKey(key)
 	loggy("VALUE TO STORE: %s", string(value))
 
@@ -80,8 +84,11 @@ func (ns NomadStorage) Store(ctx context.Context, key string, value []byte) erro
 	return nil
 }
 
+
 // Load retrieves the value for a key from Nomad KV
 func (ns NomadStorage) Load(ctx context.Context, key string) ([]byte, error) {
+	ns.mu.Lock()
+	defer ns.mu.Unlock()
 	path := ns.readyKey(key)
 	opts := NomadQueryDefaults(ctx)
 	loggy("loading key: %s", path)
@@ -117,13 +124,20 @@ func (ns NomadStorage) Load(ctx context.Context, key string) ([]byte, error) {
 }
 
 // Delete a key from Nomad KV
-func (ns NomadStorage) Delete(ctx context.Context, key string) error {
-	path := ns.readyKey(key)
-	loggy("deleting key: %s", path)
-	opts := NomaWriteDefaults(ctx)
+func (ns *NomadStorage) Delete(ctx context.Context, key string) error {
+	escapedAndPrefixedKey := ns.readyKey(key)
 
-	if _, err := ns.NomadClient.Variables().Delete(path, opts); err != nil {
-		msg := fmt.Sprintf("unable to delete data for %s", ns.readyKey(key))
+	// Lock the key before deleting
+	lockKey := ns.prefixKey(fmt.Sprintf("locks/%s", escapedAndPrefixedKey))
+	lock, err := ns.acquireLock(ctx, lockKey)
+	if err != nil {
+		return err
+	}
+	defer ns.releaseLock(lock)
+
+	opts := NomaWriteDefaults(ctx)
+	if _, err := ns.NomadClient.Variables().Delete(escapedAndPrefixedKey, opts); err != nil {
+		msg := fmt.Sprintf("unable to delete data for %s", escapedAndPrefixedKey)
 		return wrapError(err, msg)
 	}
 
